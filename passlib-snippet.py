@@ -102,7 +102,6 @@ cryptctx4_from_string = CryptContext.from_string(cryptctx4_string)
 # Or it can be loaded from a local file.
 cryptctx4_from_string2 = CryptContext.from_path("./cryptcontext.ini")
 
-
 ## Deprecation & Hash Migration ##
 # The final and possibly most useful feature of the CryptContext class is that it can take care of deprecating and migrating existing hashes, re-hashing them using the current default algorithm and settings. All that is required is that a few settings be added to the configuration, and that the application call one extra method whenever a user logs in. #
 cryptctx5 = CryptContext(schemes=["sha256_crypt", "md5_crypt", "des_crypt"], deprecated=["md5_crypt", "des_crypt"])
@@ -111,3 +110,22 @@ hash6= cryptctx5.hash("password", scheme="sha256_crypt")
 print(cryptctx5.needs_update(hash6))
 hash7 = cryptctx5.hash("password", scheme="md5_crypt")
 print(cryptctx5.needs_update(hash7))
+# To summarize the process described in the previous section, all the actions an application would usually need to perform can be combined into the following bit of skeleton code. #
+""" hash = get_hash_from_user(user)
+valid, new_hash = pass_ctx.verify_and_update(password, hash)
+if valid:
+    if new_hash:
+        replace_user_hash(user, new_hash)
+    do_successful_things()
+else:
+    reject_user_login() """
+# In addition to deprecating entire algorithms, the deprecations system also allows you to place limits on algorithms that support the variable time-cost parameter rounds. #
+# As an example, take a typical system containing a number of user passwords, all stored using sha256_crypt. As computers get faster, the minimum number of rounds that should be used gets larger, yet the existing passwords will remain in the system hashed using their original value. To solve this, the CryptContext object lets you place minimum bounds on what rounds values are allowed, using the scheme__min_rounds set of keywords… any hashes whose rounds are outside this limit are considered deprecated, and in need of re-encoding using the current policy #
+cryptctx6 = CryptContext(schemes=["sha256_crypt"], sha256_crypt__min_rounds=131072, sha256_crypt__default_rounds=131073)
+hash8 = cryptctx6.hash("password")
+print(cryptctx6.needs_update(hash8))
+hash9 = "$5$rounds=80000$qoCFY.akJr.flB7V$8cIZXLwSTzuCRLcJbgHlxqYKEK0cVCENy6nFIlROj05"
+print(cryptctx6.needs_update(hash9))
+print(cryptctx6.verify_and_update("wrong", hash9))
+print(cryptctx6.verify_and_update("password", hash9))
+print(cryptctx6.to_string())
