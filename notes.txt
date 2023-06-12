@@ -1,0 +1,67 @@
+**********
+
+    PASSLIB
+
+    |Password Hashes|
+
+All of the hashes supported by Passlib are implemented as “hasher” classes which can be imported from the passlib.hash module.
+
+Passlib supports a large number of hash algorithms, all of which can be imported from the passlib.hash module. While the exact options and behavior will vary between each algorithm, all of the hashes provided by Passlib use the same interface, defined by the passlib.ifc.PasswordHash abstract class
+
+The PasswordHash class provides a generic interface for interacting individually with the various hashing algorithms. It offers methods and attributes for a number of use-cases, which fall into three general categories:
+
+-Creating & verifying hashes
+-Examining the configuration of a hasher, and customizing the defaults.
+-Assorting supplementary methods.
+
+
+
+    Choosing the right rounds value
+
+For hash algorithms with a variable time-cost, Passlib’s PasswordHash.default_rounds values attempt to be secure enough for the average system. But the “right” value for a given hash is dependant on the server, its cpu, its expected load, and its users. Since larger values mean increased work for an attacker…
+
+The right rounds value for a given hash & server should be the largest possible value that doesn’t cause intolerable delay for your users.
+
+For most public facing services, you can generally have signin take upwards of 250ms - 400ms before users start getting annoyed. For superuser accounts, it should take as much time as the admin can stand (usually ~4x more delay than a regular account).
+
+Passlib’s default_rounds values are retuned periodically, starting with a rough estimate of what an “average” system is capable of, and then setting all hash.default_rounds values to take ~300ms on such a system. However, some older algorithms (e.g. bsdi_crypt) are weak enough that a tradeoff must be made, choosing “more secure but intolerably slow” over “fast but unacceptably insecure”.
+
+For this reason, it is strongly recommended to not use a value much lower than Passlib’s default, and to use one of recommended hashes, as one of their chief qualifying features is the mere existence of rounds values which take a short enough amount of time, and yet are still considered secure.
+
+----------
+
+    |Password Contexts|
+
+Mature applications frequently have to deal with tables of existing password hashes. Over time, they have to support a number of tasks:
+
+-Add support for new algorithms, and deprecate old ones.
+-Raise the time-cost settings for existing algorithms as computing power increases.
+-Perform rolling upgrades of existing hashes to comply with these changes.
+-Eventually, these policies must be hardcoded in the source, or time must be spent implementing a configuration language to encode them.
+
+In these situations, loading and handling multiple hash algorithms becomes complicated and tedious. The passlib.context module provides a single class, CryptContext, which attempts to solve all of these problems (or at least relieve developers of most of the burden).
+
+This class handles managing multiple password hash schemes, deprecation & migration of old hashes, and supports a simple configuration language that can be serialized to an INI file.
+
+
+
+    CryptContext
+
+The passlib.context module contains one main class: passlib.context.CryptContext. This class is designed to take care of many of the more frequent coding patterns which occur in applications that need to handle multiple password hashes at once:
+
+-identifying the algorithm used by a hash, and then verify a password.
+-configure the default algorithm, load in support for new algorithms, deprecate old ones, set defaults for time-cost parameters, etc.
+-migrate hashes / re-hash passwords when an algorithm has been deprecated.
+-load said configuration from a sysadmin configurable file.
+
+----------
+
+    |Two-Factor Authentication|
+
+While not strictly connected to password hashing, modern applications frequently need to perform the related task of two-factor authentication. One of the most common protocols for doing this is TOTP (RFC 6238). To help get TOTP in place, the passlib.totp module provides a set of helper functions for securely configuring, persisting, and verifying TOTP tokens.
+
+**********
+
+RS256 vs HS256: https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
+
+**********
