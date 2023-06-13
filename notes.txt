@@ -60,6 +60,34 @@ The passlib.context module contains one main class: passlib.context.CryptContext
 
 While not strictly connected to password hashing, modern applications frequently need to perform the related task of two-factor authentication. One of the most common protocols for doing this is TOTP (RFC 6238). To help get TOTP in place, the passlib.totp module provides a set of helper functions for securely configuring, persisting, and verifying TOTP tokens.
 
+
+
+    TOTP
+
+The passlib.totp module provides a set of classes for adding two-factor authentication (2FA) support into your application, using the widely supported TOTP specification (RFC 6238).
+
+This module is based around the TOTP class, which supports a wide variety of use-cases, including:
+
+-Creating & transferring configured TOTP keys to client devices.
+-Generating & verifying tokens.
+-Securely storing configured TOTP keys.
+
+
+
+    Rate-Limiting & Cache Initialization
+As part of your application initialization, it critically important to set up infrastructure to rate limit how many token verification attempts a user / ip address is allowed to make, otherwise TOTP can be bypassed.
+
+It’s also strongly recommended to set up a per-user cache which can store the last matched TOTP counter (an integer) for a period of a few minutes (e.g. using dogpile.cache, memcached, redis, etc). This cache is used by later steps to protect your application during a narrow window of time where TOTP would otherwise be vulnerable to a replay attack.
+
+
+
+    Why Rate-Limiting is critically
+The TOTP.match() method offers a window parameter, expanding the search range to account for the client getting slightly out of sync.
+
+While it’s tempting to be user-friendly, and make this window as large as possible, there is a security downside: Since any token within the window will be treated as valid, the larger you make the window, the more likely it is that an attacker will be able to guess the correct token by random luck.
+
+Because of this, it’s critical for applications implementing OTP to rate-limit the number of attempts on an account, since an unlimited number of attempts guarantees an attacker will be able to guess any given token.
+
 **********
 
 RS256 vs HS256: https://community.auth0.com/t/rs256-vs-hs256-jwt-signing-algorithms/58609
